@@ -1,0 +1,22 @@
+---
+- name: Create curator etc dir
+  file:
+    path: "{{ elastic_curator_etc_dir }}"
+    state: directory
+
+- name: Copy curator config
+  copy:
+    content: "{{ elastic_curator_config_yaml | to_nice_yaml }}"
+    dest: "{{ elastic_curator_etc_dir }}/curator.yml"
+    mode: "0644"
+    owner: root
+    group: root
+
+- name: Copy curator action file
+  copy:
+    content: "{{ elastic_curator_action | to_nice_yaml }}"
+    dest: "{{ elastic_curator_etc_dir }}/actions.yml"
+    mode: "0644"
+    owner: root
+    group: root
+    validate: "curator --config {{ elastic_curator_etc_dir }}/curator.yml %s"

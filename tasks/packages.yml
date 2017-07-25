@@ -1,0 +1,17 @@
+---
+- name: Add ElasticSearch apt key.
+  apt_key:
+    id: "{{ elastic_curator_pgp_key }}"
+    keyserver: "{{ elastic_curator_keyserver }}"
+    state: present
+
+- name: Add curator apt repository.
+  apt_repository:
+    repo: "{{ elastic_curator_elastic_repo_url }}"
+    state: present
+
+- name: Install curator packages.
+  apt:
+    name: "{{ item }}{{ elastic_curator_pkg_version|default('') }}"
+    state: present
+  with_items: "{{ elastic_curator_packages }}"
