@@ -14,6 +14,9 @@ elastic_curator_keyserver: pgp.mit.edu
 elastic_curator_elastic_repo_url: "deb [arch=amd64] http://packages.elastic.co/curator/{{ elastic_curator_version }}/debian stable main"
 
 elastic_curator_etc_dir: /etc/curator
+elastic_curator_act_dir: "{{ elastic_curator_etc_dir }}/actions"
+
+elastic_curator_bin: /usr/bin/curator
 
 elastic_curator_esserver: "127.0.0.1"
 elastic_curator_esserver_port: 9200
@@ -43,24 +46,29 @@ elastic_curator_config_yaml:
 
 # Default action to delete indices
 # www.elastic.co/guide/en/elasticsearch/client/curator/5.1/ex_delete_indices.html
-elastic_curator_action:
-  1:
-    action: delete_indices
-    description: >-
-      Delete indices older than {{ elastic_curator_delete_days }} days (based
-      on index name), for {{elastic_curator_delete_prefix}} prefixed indices.
-      Ignore the error if the filter does not result in an actionable list of
-      indices (ignore_empty_list) and exit cleanly.
-    options:
-      ignore_empty_list: True
-      disable_action: False
-    filters:
-      - filtertype: pattern
-        kind: prefix
-        value: "{{ elastic_curator_delete_prefix }}"
-      - filtertype: age
-        source: name
-        direction: older
-        timestring: '%Y.%m.%d'
-        unit: days
-        unit_count: "{{ elastic_curator_delete_days }}"
+elastic_curator_delete_older_than_x:
+  actions:
+    1:
+      action: delete_indices
+      description: >-
+        Delete indices older than {{ elastic_curator_delete_days }} days (based
+        on index name), for {{elastic_curator_delete_prefix}} prefixed indices.
+        Ignore the error if the filter does not result in an actionable list of
+        indices (ignore_empty_list) and exit cleanly.
+      options:
+        ignore_empty_list: True
+        disable_action: False
+      filters:
+        - filtertype: pattern
+          kind: prefix
+          value: "{{ elastic_curator_delete_prefix }}"
+        - filtertype: age
+          source: name
+          direction: older
+          timestring: '%Y.%m.%d'
+          unit: days
+          unit_count: "{{ elastic_curator_delete_days }}"
+
+# Overload this dictionary to provide alternative curator action files
+elastic_curator_actions:
+  delete_indices: "{{ elastic_curator_delete_older_than_x }}"
