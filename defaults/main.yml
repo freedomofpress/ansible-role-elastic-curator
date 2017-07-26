@@ -72,3 +72,17 @@ elastic_curator_delete_older_than_x:
 # Overload this dictionary to provide alternative curator action files
 elastic_curator_actions:
   delete_indices: "{{ elastic_curator_delete_older_than_x }}"
+
+# http://click.pocoo.org/5/python3/#python-3-surrogate-handling
+elastic_curator_cron_default_env:
+  - name: LC_ALL
+    value: C.UTF-8
+  - name: LANG
+    value: C.UTF-8
+
+elastic_curator_cron_jobs:
+  - name: delete_indices
+    minute: 0
+    hour: 1
+    user: nobody
+    file: curator

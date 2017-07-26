@@ -1,0 +1,25 @@
+---
+- name: Add cron job to run curator tasks
+  cron:
+    name: "{{ item.name }}"
+    job: |
+      {{elastic_curator_bin}} {{elastic_curator_act_dir}}/{{item.name}}.yml --config {{elastic_curator_etc_dir}}/curator.yml
+    special_time: "{{ item.special | default(omit) }}"
+    user: "{{ item.user | default(omit) }}"
+    cron_file: "{{ item.file | default(omit) }}"
+    day: "{{ item.day | default(omit) }}"
+    minute: "{{ item.minute | default(omit) }}"
+    hour: "{{ item.hour | default(omit) }}"
+    env: "{{ item.env | default(omit) }}"
+  with_items: "{{ elastic_curator_cron_jobs }}"
+
+- name: Add cron job environ vars to curator cron jobs
+  cron:
+    name: "{{ item.1.name }}"
+    value: "{{ item.1.value }}"
+    cron_file: "{{ item.0.file | default(omit) }}"
+    user: "{{ item.0.user | default(omit) }}"
+    env: yes
+  with_nested:
+    - "{{ elastic_curator_cron_jobs }}"
+    - "{{ elastic_curator_cron_default_env }}"

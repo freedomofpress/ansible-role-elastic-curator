@@ -2,3 +2,5 @@
 - include: packages.yml
 
 - include: configure.yml
+
+- include: cron.yml
