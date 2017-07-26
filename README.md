@@ -27,6 +27,11 @@ elastic_curator_etc_dir: /etc/curator
 elastic_curator_esserver: "127.0.0.1"
 elastic_curator_esserver_port: 9200
 
+# Only applicable if the elastic_curator_action var is unmodified and/or
+# added-back in upon modification
+elastic_curator_delete_days: 45
+elastic_curator_delete_prefix: "logstash-"
+
 elastic_curator_config_client:
   hosts:
     - "{{ elastic_curator_esserver }}"
@@ -51,22 +56,23 @@ elastic_curator_action:
   1:
     action: delete_indices
     description: >-
-      Delete indices older than 45 days (based on index name), for logstash-
-      prefixed indices. Ignore the error if the filter does not result in an
-      actionable list of indices (ignore_empty_list) and exit cleanly.
+      Delete indices older than {{ elastic_curator_delete_days }} days (based
+      on index name), for {{elastic_curator_delete_prefix}} prefixed indices.
+      Ignore the error if the filter does not result in an actionable list of
+      indices (ignore_empty_list) and exit cleanly.
     options:
       ignore_empty_list: True
       disable_action: False
     filters:
       - filtertype: pattern
         kind: prefix
-        value: logstash-
+        value: "{{ elastic_curator_delete_prefix }}"
       - filtertype: age
         source: name
         direction: older
         timestring: '%Y.%m.%d'
         unit: days
-        unit_count: 45
+        unit_count: "{{ elastic_curator_delete_days }}"
 ```
 
 Example Playbook
