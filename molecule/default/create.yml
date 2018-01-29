@@ -1,11 +1,14 @@
 ---
-- hosts: localhost
+- name: Create
+  hosts: localhost
   connection: local
+  gather_facts: false
+  no_log: "{{ not lookup('env', 'MOLECULE_DEBUG') | bool }}"
   vars:
     molecule_file: "{{ lookup('env', 'MOLECULE_FILE') }}"
     molecule_ephemeral_directory: "{{ lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}"
     molecule_scenario_directory: "{{ lookup('env', 'MOLECULE_SCENARIO_DIRECTORY') }}"
-    molecule_yml: "{{ lookup('file', molecule_file) | from_yaml }}"
+    molecule_yml: "{{ lookup('file', molecule_file) | molecule_from_yaml }}"
     docker_config: "{{ lookup('file', 'docker_hashes.yml') | from_yaml }}"
   tasks:
     # If you add this into the molecule file, molecule adds it as a target for
@@ -32,18 +35,27 @@
 
     - name: Create molecule instance(s)
       docker_container:
-        name: "{{ molecule_file | molecule_instance_with_scenario_name(item.name) }}"
-        hostname: "{{ molecule_file | molecule_instance_with_scenario_name(item.name) }}"
+        name: "{{ item.name }}"
+        hostname: "{{ item.name }}"
         image: "{{ item.image }}@{{ docker_config[item.image] }}"
         state: started
-        recreate: False
-        log_driver: syslog
-        command: "{{ item.command | default(omit)}}"
+        recreate: false
+        log_driver: json-file
+        command: "{{ item.command | default('bash -c \"while true; do sleep 10000; done\"') }}"
         privileged: "{{ item.privileged | default(omit) }}"
         volumes: "{{ item.volumes | default(omit) }}"
         capabilities: "{{ item.capabilities | default(omit) }}"
-        links:
-          - curator_role_elasticsearch:esserver
-        published_ports: "{{ item.published_ports | default(omit) }}"
-        exposed_ports: "{{ item.exposed_ports | default(omit) }}"
+        ports: "{{ item.exposed_ports | default(omit) }}"
+        ulimits: "{{ item.ulimits | default(omit) }}"
+      register: server
       with_items: "{{ molecule_yml.platforms }}"
+      async: 7200
+      poll: 0
+
+    - name: Wait for instance(s) creation to complete
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: docker_jobs
+      until: docker_jobs.finished
+      retries: 300
+      with_items: "{{ server.results }}"
